@@ -278,6 +278,38 @@ func TestSaveRemovesEmptyFile(t *testing.T) {
 	}
 }
 
+func TestSavePreservesFileWithExistingComments(t *testing.T) {
+	// Simulate git's default exclude file with only comments
+	content := "# git ls-files --others --exclude-from=.git/info/exclude\n# Lines that start with '#' are comments.\n\n# Claude Code files (managed by cignore)\nCLAUDE.md\n"
+	dir := setupTestRepo(t, content)
+
+	gi, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gi.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	// File should still exist because it has pre-existing comment lines
+	excludePath := filepath.Join(dir, ".git", "info", "exclude")
+	if _, err := os.Stat(excludePath); os.IsNotExist(err) {
+		t.Error("exclude file should be preserved when it has pre-existing comments")
+	}
+
+	result := readExclude(t, dir)
+	if !strings.Contains(result, "# git ls-files") {
+		t.Error("should preserve original comments")
+	}
+	if strings.Contains(result, "CLAUDE.md") {
+		t.Error("should not contain removed pattern")
+	}
+}
+
 func TestSavePreservesExistingContent(t *testing.T) {
 	content := "# My project\nnode_modules/\n*.log\ndist/\n"
 	dir := setupTestRepo(t, content)

@@ -107,17 +107,10 @@ func (g *GitIgnore) RemovePattern(pattern string) error {
 }
 
 // Save writes the current patterns back to the .git/info/exclude file.
-// If no meaningful content remains, the file is removed.
+// If no content remains (all lines removed), the file is deleted.
 func (g *GitIgnore) Save() error {
-	// If there's no meaningful content, remove the file
-	hasContent := false
-	for _, p := range g.patterns {
-		if !isBlank(p.Line) && !isComment(p.Line) {
-			hasContent = true
-			break
-		}
-	}
-	if !hasContent {
+	// If all lines have been removed, delete the file
+	if len(g.patterns) == 0 {
 		if err := os.Remove(g.path); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to remove .git/info/exclude: %w", err)
 		}
