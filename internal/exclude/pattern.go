@@ -1,8 +1,8 @@
-package gitignore
+package exclude
 
 import "strings"
 
-// Pattern represents a single line in a .gitignore file.
+// Pattern represents a single line in a .git/info/exclude file.
 type Pattern struct {
 	Line      string
 	IsIgnored bool // true if this line is an active ignore pattern (not comment/blank)

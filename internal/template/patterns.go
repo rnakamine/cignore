@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-// PatternInfo holds a gitignore pattern and its description.
+// PatternInfo holds an exclude pattern and its description.
 type PatternInfo struct {
 	Pattern     string
 	Description string

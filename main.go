@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/rnakamine/cignore/internal/gitignore"
+	"github.com/rnakamine/cignore/internal/exclude"
 	"github.com/rnakamine/cignore/internal/selector"
 	"github.com/rnakamine/cignore/internal/template"
 )
@@ -26,7 +26,7 @@ func run() error {
 	}
 
 	// Load .git/info/exclude
-	gi, err := gitignore.Load(repoPath)
+	ef, err := exclude.Load(repoPath)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func run() error {
 		}
 		items = append(items, selector.Item{
 			Pattern:     p.Pattern,
-			IsIgnored:   gi.HasPattern(p.Pattern),
+			IsIgnored:   ef.HasPattern(p.Pattern),
 			Description: p.Description,
 		})
 	}
@@ -74,12 +74,12 @@ func run() error {
 		nowIgnored := item.IsIgnored
 
 		if !wasIgnored && nowIgnored {
-			if err := gi.AddPattern(item.Pattern); err != nil {
+			if err := ef.AddPattern(item.Pattern); err != nil {
 				return fmt.Errorf("failed to add pattern %q: %w", item.Pattern, err)
 			}
 			added = append(added, item.Pattern)
 		} else if wasIgnored && !nowIgnored {
-			if err := gi.RemovePattern(item.Pattern); err != nil {
+			if err := ef.RemovePattern(item.Pattern); err != nil {
 				return fmt.Errorf("failed to remove pattern %q: %w", item.Pattern, err)
 			}
 			removed = append(removed, item.Pattern)
@@ -92,7 +92,7 @@ func run() error {
 	}
 
 	// Save changes
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		return err
 	}
 

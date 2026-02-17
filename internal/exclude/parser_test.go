@@ -1,4 +1,4 @@
-package gitignore
+package exclude
 
 import (
 	"os"
@@ -34,12 +34,12 @@ func readExclude(t *testing.T, dir string) string {
 
 func TestLoadEmpty(t *testing.T) {
 	dir := t.TempDir()
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
-	if len(gi.patterns) != 0 {
-		t.Errorf("expected 0 patterns, got %d", len(gi.patterns))
+	if len(ef.patterns) != 0 {
+		t.Errorf("expected 0 patterns, got %d", len(ef.patterns))
 	}
 }
 
@@ -47,23 +47,23 @@ func TestLoadExisting(t *testing.T) {
 	content := "node_modules/\n*.log\n# comment\n\nCLAUDE.md\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
 
-	if len(gi.patterns) != 5 {
-		t.Fatalf("expected 5 patterns, got %d", len(gi.patterns))
+	if len(ef.patterns) != 5 {
+		t.Fatalf("expected 5 patterns, got %d", len(ef.patterns))
 	}
 
 	// Check active patterns
-	if !gi.HasPattern("node_modules/") {
+	if !ef.HasPattern("node_modules/") {
 		t.Error("expected HasPattern(node_modules/) to be true")
 	}
-	if !gi.HasPattern("CLAUDE.md") {
+	if !ef.HasPattern("CLAUDE.md") {
 		t.Error("expected HasPattern(CLAUDE.md) to be true")
 	}
-	if gi.HasPattern("# comment") {
+	if ef.HasPattern("# comment") {
 		t.Error("expected HasPattern(# comment) to be false")
 	}
 }
@@ -72,7 +72,7 @@ func TestHasPattern(t *testing.T) {
 	content := "CLAUDE.md\n.claude/\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestHasPattern(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := gi.HasPattern(tt.pattern)
+		got := ef.HasPattern(tt.pattern)
 		if got != tt.want {
 			t.Errorf("HasPattern(%q) = %v, want %v", tt.pattern, got, tt.want)
 		}
@@ -98,26 +98,26 @@ func TestHasPattern(t *testing.T) {
 func TestAddPattern(t *testing.T) {
 	dir := setupTestRepo(t, "node_modules/\n")
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.AddPattern("CLAUDE.md"); err != nil {
+	if err := ef.AddPattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.AddPattern(".claude/"); err != nil {
+	if err := ef.AddPattern(".claude/"); err != nil {
 		t.Fatal(err)
 	}
 
-	if !gi.HasPattern("CLAUDE.md") {
+	if !ef.HasPattern("CLAUDE.md") {
 		t.Error("CLAUDE.md should be present after adding")
 	}
-	if !gi.HasPattern(".claude/") {
+	if !ef.HasPattern(".claude/") {
 		t.Error(".claude/ should be present after adding")
 	}
 
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -137,18 +137,18 @@ func TestAddPatternDuplicate(t *testing.T) {
 	content := "CLAUDE.md\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.AddPattern("CLAUDE.md"); err != nil {
+	if err := ef.AddPattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Pattern count should not change
 	count := 0
-	for _, p := range gi.patterns {
+	for _, p := range ef.patterns {
 		if p.IsIgnored && normalizePattern(p.Line) == "CLAUDE.md" {
 			count++
 		}
@@ -162,23 +162,23 @@ func TestRemovePattern(t *testing.T) {
 	content := "node_modules/\nCLAUDE.md\n.claude/\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+	if err := ef.RemovePattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
 
-	if gi.HasPattern("CLAUDE.md") {
+	if ef.HasPattern("CLAUDE.md") {
 		t.Error("CLAUDE.md should not be present after removal")
 	}
-	if !gi.HasPattern("node_modules/") {
+	if !ef.HasPattern("node_modules/") {
 		t.Error("node_modules/ should still be present")
 	}
 
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -195,33 +195,33 @@ func TestRemovePatternNonexistent(t *testing.T) {
 	content := "node_modules/\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Should not error
-	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+	if err := ef.RemovePattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(gi.patterns) != 1 {
-		t.Errorf("expected 1 pattern, got %d", len(gi.patterns))
+	if len(ef.patterns) != 1 {
+		t.Errorf("expected 1 pattern, got %d", len(ef.patterns))
 	}
 }
 
 func TestAddToEmptyFile(t *testing.T) {
 	dir := t.TempDir()
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.AddPattern("CLAUDE.md"); err != nil {
+	if err := ef.AddPattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -235,18 +235,18 @@ func TestAddToEmptyFile(t *testing.T) {
 }
 
 func TestSectionCleanup(t *testing.T) {
-	content := "node_modules/\n\n# Claude Code files (managed by cignore)\nCLAUDE.md\n"
+	content := "node_modules/\n\n# Claude Code files (managed by cexclude)\nCLAUDE.md\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+	if err := ef.RemovePattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -257,18 +257,18 @@ func TestSectionCleanup(t *testing.T) {
 }
 
 func TestSaveRemovesEmptyFile(t *testing.T) {
-	content := "# Claude Code files (managed by cignore)\nCLAUDE.md\n"
+	content := "# Claude Code files (managed by cexclude)\nCLAUDE.md\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+	if err := ef.RemovePattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -280,18 +280,18 @@ func TestSaveRemovesEmptyFile(t *testing.T) {
 
 func TestSavePreservesFileWithExistingComments(t *testing.T) {
 	// Simulate git's default exclude file with only comments
-	content := "# git ls-files --others --exclude-from=.git/info/exclude\n# Lines that start with '#' are comments.\n\n# Claude Code files (managed by cignore)\nCLAUDE.md\n"
+	content := "# git ls-files --others --exclude-from=.git/info/exclude\n# Lines that start with '#' are comments.\n\n# Claude Code files (managed by cexclude)\nCLAUDE.md\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+	if err := ef.RemovePattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -314,15 +314,15 @@ func TestSavePreservesExistingContent(t *testing.T) {
 	content := "# My project\nnode_modules/\n*.log\ndist/\n"
 	dir := setupTestRepo(t, content)
 
-	gi, err := Load(dir)
+	ef, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := gi.AddPattern("CLAUDE.md"); err != nil {
+	if err := ef.AddPattern("CLAUDE.md"); err != nil {
 		t.Fatal(err)
 	}
-	if err := gi.Save(); err != nil {
+	if err := ef.Save(); err != nil {
 		t.Fatal(err)
 	}
 

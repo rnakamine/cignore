@@ -1,4 +1,4 @@
-package gitignore
+package exclude
 
 import "testing"
 
