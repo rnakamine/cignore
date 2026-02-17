@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/rnakamine/cignore/internal/exclude"
-	"github.com/rnakamine/cignore/internal/selector"
-	"github.com/rnakamine/cignore/internal/template"
+	"github.com/rnakamine/cexclude/internal/exclude"
+	"github.com/rnakamine/cexclude/internal/selector"
+	"github.com/rnakamine/cexclude/internal/template"
 )
 
 func main() {

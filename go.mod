@@ -1,4 +1,4 @@
-module github.com/rnakamine/cignore
+module github.com/rnakamine/cexclude
 
 go 1.24.7
 

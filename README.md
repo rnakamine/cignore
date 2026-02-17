@@ -13,7 +13,7 @@ CLI tool to manage Claude Code related files in `.git/info/exclude` with an inte
 ## Installation
 
 ```bash
-go install github.com/rnakamine/cignore@latest
+go install github.com/rnakamine/cexclude@latest
 ```
 
 ## Usage
