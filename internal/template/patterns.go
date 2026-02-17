@@ -1,28 +1,43 @@
 package template
 
+import (
+	"os"
+	"path/filepath"
+)
+
 // PatternInfo holds a gitignore pattern and its description.
 type PatternInfo struct {
 	Pattern     string
 	Description string
 }
 
-// DefaultPatterns returns the list of Claude Code related gitignore patterns.
-func DefaultPatterns() []PatternInfo {
-	return []PatternInfo{
+// CollectPatterns returns fixed Claude Code patterns plus dynamically discovered
+// files under .claude/ in the given repository path.
+func CollectPatterns(repoPath string) []PatternInfo {
+	patterns := []PatternInfo{
 		{Pattern: "CLAUDE.md", Description: "Claude Code project information file"},
 		{Pattern: ".claude/", Description: "Claude Code configuration directory"},
-		{Pattern: ".claude/*", Description: "All files in Claude Code config directory"},
-		{Pattern: "claude.json", Description: "Claude Code configuration file"},
 	}
-}
 
-// GetPatternDescription returns the description for a given pattern.
-// Returns an empty string if the pattern is not found.
-func GetPatternDescription(pattern string) string {
-	for _, p := range DefaultPatterns() {
-		if p.Pattern == pattern {
-			return p.Description
+	// Recursively scan .claude/ directory for individual files
+	claudeDir := filepath.Join(repoPath, ".claude")
+	filepath.WalkDir(claudeDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil // skip entries that can't be read
 		}
-	}
-	return ""
+		if d.IsDir() {
+			return nil // only list files, not directories
+		}
+		rel, err := filepath.Rel(repoPath, path)
+		if err != nil {
+			return nil
+		}
+		patterns = append(patterns, PatternInfo{
+			Pattern:     rel,
+			Description: "Claude Code file",
+		})
+		return nil
+	})
+
+	return patterns
 }

@@ -10,8 +10,12 @@ import (
 func setupTestRepo(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
+	infoDir := filepath.Join(dir, ".git", "info")
+	if err := os.MkdirAll(infoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	if content != "" {
-		err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(content), 0644)
+		err := os.WriteFile(filepath.Join(infoDir, "exclude"), []byte(content), 0644)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -19,9 +23,9 @@ func setupTestRepo(t *testing.T, content string) string {
 	return dir
 }
 
-func readGitignore(t *testing.T, dir string) string {
+func readExclude(t *testing.T, dir string) string {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	data, err := os.ReadFile(filepath.Join(dir, ".git", "info", "exclude"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +121,7 @@ func TestAddPattern(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := readGitignore(t, dir)
+	content := readExclude(t, dir)
 	if !strings.Contains(content, sectionHeader) {
 		t.Error("saved file should contain section header")
 	}
@@ -178,11 +182,11 @@ func TestRemovePattern(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content = readGitignore(t, dir)
-	if strings.Contains(content, "CLAUDE.md") {
+	result := readExclude(t, dir)
+	if strings.Contains(result, "CLAUDE.md") {
 		t.Error("saved file should not contain CLAUDE.md")
 	}
-	if !strings.Contains(content, "node_modules/") {
+	if !strings.Contains(result, "node_modules/") {
 		t.Error("saved file should still contain node_modules/")
 	}
 }
@@ -221,7 +225,7 @@ func TestAddToEmptyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := readGitignore(t, dir)
+	content := readExclude(t, dir)
 	if !strings.Contains(content, sectionHeader) {
 		t.Error("should contain section header")
 	}
@@ -246,7 +250,7 @@ func TestSectionCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result := readGitignore(t, dir)
+	result := readExclude(t, dir)
 	if strings.Contains(result, sectionHeader) {
 		t.Error("section header should be removed when section is empty")
 	}
@@ -268,7 +272,7 @@ func TestSavePreservesExistingContent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result := readGitignore(t, dir)
+	result := readExclude(t, dir)
 	if !strings.Contains(result, "# My project") {
 		t.Error("should preserve existing comments")
 	}

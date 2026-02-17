@@ -25,21 +25,35 @@ func run() error {
 		return fmt.Errorf("not a git repository (or any of the parent directories)\n  Run this command inside a git repository")
 	}
 
-	// Load .gitignore
+	// Load .git/info/exclude
 	gi, err := gitignore.Load(repoPath)
 	if err != nil {
 		return err
 	}
 
-	// Build items from template patterns
-	patterns := template.DefaultPatterns()
-	items := make([]selector.Item, len(patterns))
-	for i, p := range patterns {
-		items[i] = selector.Item{
+	// Get git-tracked files to exclude from selection
+	tracked, err := gitTrackedFiles(repoPath)
+	if err != nil {
+		return err
+	}
+
+	// Build items from template patterns, filtering out tracked files
+	patterns := template.CollectPatterns(repoPath)
+	var items []selector.Item
+	for _, p := range patterns {
+		if tracked[p.Pattern] {
+			continue
+		}
+		items = append(items, selector.Item{
 			Pattern:     p.Pattern,
 			IsIgnored:   gi.HasPattern(p.Pattern),
 			Description: p.Description,
-		}
+		})
+	}
+
+	if len(items) == 0 {
+		fmt.Println("No patterns to manage. All Claude Code files are already tracked by git.")
+		return nil
 	}
 
 	// Show fuzzy finder
@@ -83,7 +97,7 @@ func run() error {
 	}
 
 	// Print summary
-	fmt.Println("Applied changes to .gitignore:")
+	fmt.Println("Applied changes to .git/info/exclude:")
 	for _, p := range added {
 		fmt.Printf("  + Added: %s\n", p)
 	}
@@ -103,4 +117,21 @@ func findGitRoot() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// gitTrackedFiles returns a set of files currently tracked by git.
+func gitTrackedFiles(repoPath string) (map[string]bool, error) {
+	cmd := exec.Command("git", "-C", repoPath, "ls-files")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tracked files: %w", err)
+	}
+
+	tracked := make(map[string]bool)
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line != "" {
+			tracked[line] = true
+		}
+	}
+	return tracked, nil
 }

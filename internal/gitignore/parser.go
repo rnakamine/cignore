@@ -16,21 +16,21 @@ type GitIgnore struct {
 	patterns []Pattern
 }
 
-// Load reads and parses a .gitignore file from the given repository path.
+// Load reads and parses a .git/info/exclude file from the given repository path.
 // If the file does not exist, an empty GitIgnore is returned.
 func Load(repoPath string) (*GitIgnore, error) {
-	gitignorePath := filepath.Join(repoPath, ".gitignore")
+	excludePath := filepath.Join(repoPath, ".git", "info", "exclude")
 
 	g := &GitIgnore{
-		path: gitignorePath,
+		path: excludePath,
 	}
 
-	f, err := os.Open(gitignorePath)
+	f, err := os.Open(excludePath)
 	if os.IsNotExist(err) {
 		return g, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to open .gitignore: %w", err)
+		return nil, fmt.Errorf("failed to open .git/info/exclude: %w", err)
 	}
 	defer f.Close()
 
@@ -106,11 +106,17 @@ func (g *GitIgnore) RemovePattern(pattern string) error {
 	return nil
 }
 
-// Save writes the current patterns back to the .gitignore file.
+// Save writes the current patterns back to the .git/info/exclude file.
 func (g *GitIgnore) Save() error {
+	// Ensure .git/info/ directory exists
+	dir := filepath.Dir(g.path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
 	f, err := os.Create(g.path)
 	if err != nil {
-		return fmt.Errorf("failed to write .gitignore: %w", err)
+		return fmt.Errorf("failed to write .git/info/exclude: %w", err)
 	}
 	defer f.Close()
 

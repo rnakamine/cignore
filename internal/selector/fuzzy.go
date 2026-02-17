@@ -42,7 +42,7 @@ func SelectPatterns(items []Item) ([]Item, error) {
 				item.Description,
 			)
 		}),
-		fuzzyfinder.WithHeader("Select Claude Code patterns to add to .gitignore (Tab: toggle, Enter: apply)"),
+		fuzzyfinder.WithHeader("Select Claude Code patterns to add to .git/info/exclude (Tab: toggle, Enter: apply)"),
 	)
 	if err != nil {
 		return nil, err
