@@ -48,17 +48,19 @@ func SelectPatterns(items []Item) ([]Item, error) {
 		return nil, err
 	}
 
-	// Build a set of selected indices
-	selected := make(map[int]bool)
+	// Build a set of toggled indices
+	toggled := make(map[int]bool)
 	for _, idx := range selectedIdxs {
-		selected[idx] = true
+		toggled[idx] = true
 	}
 
-	// Update items based on selection
+	// Toggle the state of selected items
 	result := make([]Item, len(items))
 	copy(result, items)
 	for i := range result {
-		result[i].IsIgnored = selected[i]
+		if toggled[i] {
+			result[i].IsIgnored = !result[i].IsIgnored
+		}
 	}
 
 	return result, nil

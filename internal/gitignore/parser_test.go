@@ -256,6 +256,28 @@ func TestSectionCleanup(t *testing.T) {
 	}
 }
 
+func TestSaveRemovesEmptyFile(t *testing.T) {
+	content := "# Claude Code files (managed by cignore)\nCLAUDE.md\n"
+	dir := setupTestRepo(t, content)
+
+	gi, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := gi.RemovePattern("CLAUDE.md"); err != nil {
+		t.Fatal(err)
+	}
+	if err := gi.Save(); err != nil {
+		t.Fatal(err)
+	}
+
+	excludePath := filepath.Join(dir, ".git", "info", "exclude")
+	if _, err := os.Stat(excludePath); !os.IsNotExist(err) {
+		t.Error("exclude file should be removed when empty")
+	}
+}
+
 func TestSavePreservesExistingContent(t *testing.T) {
 	content := "# My project\nnode_modules/\n*.log\ndist/\n"
 	dir := setupTestRepo(t, content)

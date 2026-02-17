@@ -13,14 +13,20 @@ type PatternInfo struct {
 
 // CollectPatterns returns fixed Claude Code patterns plus dynamically discovered
 // files under .claude/ in the given repository path.
+// Only patterns for existing files/directories are included.
 func CollectPatterns(repoPath string) []PatternInfo {
-	patterns := []PatternInfo{
-		{Pattern: "CLAUDE.md", Description: "Claude Code project information file"},
-		{Pattern: ".claude/", Description: "Claude Code configuration directory"},
+	var patterns []PatternInfo
+
+	if _, err := os.Stat(filepath.Join(repoPath, "CLAUDE.md")); err == nil {
+		patterns = append(patterns, PatternInfo{Pattern: "CLAUDE.md", Description: "Claude Code project information file"})
+	}
+
+	claudeDir := filepath.Join(repoPath, ".claude")
+	if info, err := os.Stat(claudeDir); err == nil && info.IsDir() {
+		patterns = append(patterns, PatternInfo{Pattern: ".claude/", Description: "Claude Code configuration directory"})
 	}
 
 	// Recursively scan .claude/ directory for individual files
-	claudeDir := filepath.Join(repoPath, ".claude")
 	filepath.WalkDir(claudeDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // skip entries that can't be read
